@@ -339,48 +339,23 @@ task.spawn(function()
 	end
 end)
 
-local tpCampBtn = espBtn:Clone()
-tpCampBtn.Parent = extraPage
-tpCampBtn.Position = woodBtn.Position + UDim2.new(0, 0, 0, 60)
-tpCampBtn.Text = "TP to Campfire"
+local tpSpawnBtn = espBtn:Clone()
+tpSpawnBtn.Parent = extraPage
+tpSpawnBtn.Position = woodBtn.Position + UDim2.new(0, 0, 0, 60)
+tpSpawnBtn.Text = "TP to Spawn"
 
-local autoCampBtn = espBtn:Clone()
-autoCampBtn.Parent = extraPage
-autoCampBtn.Position = tpCampBtn.Position + UDim2.new(0, 0, 0, 60)
-autoCampBtn.Text = "AutoCampfire: OFF"
+local function getSpawn()
+	return workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("SpawnLocation")
+end
 
-local campfire = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Campground") and workspace.Map.Campground:FindFirstChild("MainFire")
-
-tpCampBtn.MouseButton1Click:Connect(function()
+tpSpawnBtn.MouseButton1Click:Connect(function()
 	local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-	if hrp and campfire and campfire:IsA("BasePart") then
-		hrp.CFrame = campfire.CFrame + Vector3.new(0, 2, 0)
+	local spawnPart = getSpawn()
+	if hrp and spawnPart then
+		hrp.CFrame = spawnPart.CFrame + Vector3.new(0, 30, 0)
 	end
 end)
 
-local autoCamp = false
-autoCampBtn.MouseButton1Click:Connect(function()
-	autoCamp = not autoCamp
-	autoCampBtn.Text = "AutoCampfire: " .. (autoCamp and "ON" or "OFF")
-end)
-
-task.spawn(function()
-	while true do
-		if autoCamp and campfire then
-			local items = workspace:FindFirstChild("Items")
-			if items then
-				for _, obj in ipairs(items:GetDescendants()) do
-					if obj:IsA("Model") and obj.PrimaryPart and fuel[obj.Name] then
-						pcall(function()
-							obj:SetPrimaryPartCFrame(campfire.CFrame + Vector3.new(0, 3, 0))
-						end)
-					end
-				end
-			end
-		end
-		task.wait(0.2)
-	end
-end)
 -- Toggle menu
 floatBtn.MouseButton1Click:Connect(function()
 	menu.Visible = not menu.Visible
