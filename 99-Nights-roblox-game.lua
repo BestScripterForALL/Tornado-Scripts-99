@@ -339,60 +339,46 @@ task.spawn(function()
 	end
 end)
 
--- ========= EXTRA: KILLAURA =========
-local kAura = false
-local auraBtn = espBtn:Clone()
-auraBtn.Parent = extraPage
-auraBtn.Position = woodBtn.Position + UDim2.new(0, 0, 0, 60)
-auraBtn.Text = "KillAura: OFF"
+local tpCampBtn = espBtn:Clone()
+tpCampBtn.Parent = extraPage
+tpCampBtn.Position = woodBtn.Position + UDim2.new(0, 0, 0, 60)
+tpCampBtn.Text = "TP to Campfire"
 
-local players = game:GetService("Players")
-local player  = players.LocalPlayer
-local camera  = workspace.CurrentCamera
+local autoCampBtn = espBtn:Clone()
+autoCampBtn.Parent = extraPage
+autoCampBtn.Position = tpCampBtn.Position + UDim2.new(0, 0, 0, 60)
+autoCampBtn.Text = "AutoCampfire: OFF"
 
-local function getPartsInViewport(maxDistance)
-	local partsInViewport = {}
-	for _, part in ipairs(workspace:GetDescendants()) do
-		if part:IsA("BasePart") then
-			local distance = player:DistanceFromCharacter(part.Position)
-			if distance <= maxDistance then
-				local _, isVisible = camera:WorldToViewportPoint(part.Position)
-				if isVisible then
-					table.insert(partsInViewport, part)
-				end
-			end
-		end
+local campfire = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Campground") and workspace.Map.Campground:FindFirstChild("MainFire")
+
+tpCampBtn.MouseButton1Click:Connect(function()
+	local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+	if hrp and campfire and campfire:IsA("BasePart") then
+		hrp.CFrame = campfire.CFrame + Vector3.new(0, 2, 0)
 	end
-	return partsInViewport
-end
+end)
 
-auraBtn.MouseButton1Click:Connect(function()
-	kAura = not kAura
-	auraBtn.Text = "KillAura: " .. (kAura and "ON" or "OFF")
+local autoCamp = false
+autoCampBtn.MouseButton1Click:Connect(function()
+	autoCamp = not autoCamp
+	autoCampBtn.Text = "AutoCampfire: " .. (autoCamp and "ON" or "OFF")
 end)
 
 task.spawn(function()
 	while true do
-		task.wait()
-		if not kAura then continue end
-
-		local tool  = player.Character and player.Character:FindFirstChildOfClass("Tool")
-		local parts = getPartsInViewport(100)
-
-		if tool and tool:FindFirstChild("Handle") then
-			for _, part in ipairs(parts) do
-				local model = part and part.Parent
-				if model and model ~= player.Character then
-					local hum = model:FindFirstChildWhichIsA("Humanoid")
-					local isNpc = hum and players:GetPlayerFromCharacter(model) == nil
-					if isNpc and hum.Health > 0 then
-						tool:Activate()
-						firetouchinterest(tool.Handle, part, 0)
-						firetouchinterest(tool.Handle, part, 1)
+		if autoCamp and campfire then
+			local items = workspace:FindFirstChild("Items")
+			if items then
+				for _, obj in ipairs(items:GetDescendants()) do
+					if obj:IsA("Model") and obj.PrimaryPart and fuel[obj.Name] then
+						pcall(function()
+							obj:SetPrimaryPartCFrame(campfire.CFrame + Vector3.new(0, 3, 0))
+						end)
 					end
 				end
 			end
 		end
+		task.wait(0.2)
 	end
 end)
 -- Toggle menu
