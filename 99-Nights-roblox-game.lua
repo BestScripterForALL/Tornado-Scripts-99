@@ -339,77 +339,60 @@ task.spawn(function()
 	end
 end)
 
--- ========= EXTRA: KILLAURA (на основе автофарма дерева) =========
+-- ========= EXTRA: KILLAURA =========
 local kAura = false
 local auraBtn = espBtn:Clone()
 auraBtn.Parent = extraPage
 auraBtn.Position = woodBtn.Position + UDim2.new(0, 0, 0, 60)
 auraBtn.Text = "KillAura: OFF"
 
-local targetHL
-local function highlightTarget(t)
-	if targetHL then targetHL:Destroy() end
-	if t then
-		targetHL = Instance.new("Highlight", gui)
-		targetHL.FillColor = Color3.fromRGB(255, 0, 0)
-		targetHL.FillTransparency = 0.5
-		targetHL.OutlineTransparency = 1
-		targetHL.Adornee = t
-	end
-end
+local players = game:GetService("Players")
+local player  = players.LocalPlayer
+local camera  = workspace.CurrentCamera
 
-local validMobs = {
-	["Bunny"] = true,
-	["Cultist"] = true,
-	["Crossbow Cultist"] = true,
-	["Wolf"] = true,
-	["Alpha Wolf"] = true,
-}
+local function getPartsInViewport(maxDistance)
+	local partsInViewport = {}
+	for _, part in ipairs(workspace:GetDescendants()) do
+		if part:IsA("BasePart") then
+			local distance = player:DistanceFromCharacter(part.Position)
+			if distance <= maxDistance then
+				local _, isVisible = camera:WorldToViewportPoint(part.Position)
+				if isVisible then
+					table.insert(partsInViewport, part)
+				end
+			end
+		end
+	end
+	return partsInViewport
+end
 
 auraBtn.MouseButton1Click:Connect(function()
 	kAura = not kAura
 	auraBtn.Text = "KillAura: " .. (kAura and "ON" or "OFF")
-	if not kAura and targetHL then
-		targetHL:Destroy()
-		targetHL = nil
-	end
 end)
 
 task.spawn(function()
 	while true do
-		if kAura then
-			local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-			local chars = workspace:FindFirstChild("Characters")
-			if hrp and chars then
-				local nearest
-				local dist = 100
-				for _, ch in ipairs(chars:GetChildren()) do
-					if validMobs[ch.Name] and ch:FindFirstChild("HumanoidRootPart") and ch:FindFirstChild("Humanoid") then
-						if ch.Humanoid.Health > 0 then
-							local d = (hrp.Position - ch.HumanoidRootPart.Position).Magnitude
-							if d < dist then
-								dist = d
-								nearest = ch
-							end
-						end
-					end
-				end
-				if nearest then
-					highlightTarget(nearest)
-					hrp.CFrame = nearest.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+		task.wait()
+		if not kAura then continue end
 
-					while kAura and nearest and nearest.Parent and nearest:FindFirstChild("Humanoid") and nearest.Humanoid.Health > 0 do
-						VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-						task.wait(0.05)
-						VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-						task.wait(0.25)
-					end
+		local tool  = player.Character and player.Character:FindFirstChildOfClass("Tool")
+		local parts = getPartsInViewport(100)
 
-					highlightTarget(nil)
+		if tool and tool:FindFirstChild("Handle") then
+			for _, part in ipairs(parts) do
+				local model = part and part.Parent
+				if model and model ~= player.Character then
+					local hum = model:FindFirstChildWhichIsA("Humanoid")
+					local isNpc = hum and players:GetPlayerFromCharacter(model) == nil
+					if isNpc and hum.Health > 0 then
+						tool:Activate()
+						firetouchinterest(tool.Handle, part, 0)
+						firetouchinterest(tool.Handle, part, 1)
+					end
 				end
 			end
 		end
-		task.wait(0.2)
 	end
 end)
 -- Toggle menu
